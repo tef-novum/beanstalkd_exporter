@@ -46,8 +46,8 @@ var (
 		"binlog-max-size":         "is the maximum size in bytes a binlog file is allowed to get before a new binlog file is opened.",
 		"binlog-records-written":  "is the cumulative number of records written to the binlog.",
 		"binlog-records-migrated": "is the cumulative number of records written as part of compaction.",
-		"id":       "is a random id string for this server process, generated when each beanstalkd process starts.",
-		"hostname": "is the hostname of the machine as determined by uname.",
+		"id":                      "is a random id string for this server process, generated when each beanstalkd process starts.",
+		"hostname":                "is the hostname of the machine as determined by uname.",
 	}
 
 	tubeStatsHelp = map[string]string{

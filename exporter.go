@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/kr/beanstalk"
+	"github.com/beanstalkd/go-beanstalk"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/common/log"
 )
@@ -141,17 +141,23 @@ func (e *Exporter) scrape(f func(prometheus.Collector)) {
 
 		name := strings.Replace(key, "-", "_", -1)
 		help := systemStatsHelp[key]
+		constLabels := prometheus.Labels{"server": e.address}
+		iValue := 1.0
 		if help == "" {
 			help = key
+		}
+		if key == "version" {
+			constLabels = prometheus.Labels{"server": e.address, "version": value}
+		} else {
+			iValue, _ = strconv.ParseFloat(value, 64)
 		}
 		gauge := prometheus.NewGauge(prometheus.GaugeOpts{
 			Namespace:   namespace,
 			Name:        name,
 			Help:        help,
-			ConstLabels: prometheus.Labels{"server": e.address},
+			ConstLabels: constLabels,
 		})
 
-		iValue, _ := strconv.ParseFloat(value, 64)
 		gauge.Set(iValue)
 
 		f(gauge)
