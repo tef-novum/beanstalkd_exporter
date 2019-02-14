@@ -39,7 +39,7 @@ func NewExporter(address string) *Exporter {
 
 		scrapeCountMetric: prometheus.NewCounterVec(
 			prometheus.CounterOpts{
-				Namespace: "beanstalkd",
+				Namespace: namespace,
 				Subsystem: "exporter",
 				Name:      "requests_total",
 				Help:      "The number of request to beanstalkd.",
@@ -48,7 +48,7 @@ func NewExporter(address string) *Exporter {
 		),
 		scrapeConnectionErrorMetric: prometheus.NewCounter(
 			prometheus.CounterOpts{
-				Namespace: "beanstalkd",
+				Namespace: namespace,
 				Subsystem: "exporter",
 				Name:      "scrape_connection_errors_total",
 				Help:      "Total number of connection errors to beanstalkd.",
@@ -145,9 +145,10 @@ func (e *Exporter) scrape(f func(prometheus.Collector)) {
 			help = key
 		}
 		gauge := prometheus.NewGauge(prometheus.GaugeOpts{
+			Namespace:   namespace,
 			Name:        name,
 			Help:        help,
-			ConstLabels: prometheus.Labels{"instance": e.address},
+			ConstLabels: prometheus.Labels{"server": e.address},
 		})
 
 		iValue, _ := strconv.ParseFloat(value, 64)
@@ -191,10 +192,10 @@ func (e *Exporter) statTube(c *beanstalk.Conn, tubeName string, f func(prometheu
 		labels = prometheus.Labels{"tube": tubeName}
 	}
 
-	labels["instance"] = e.address
+	labels["server"] = e.address
 
 	// be sure all labels are set
-	allLabelNames := append(mapper.getAllLabels(), "instance", "tube")
+	allLabelNames := append(mapper.getAllLabels(), "server", "tube")
 	for _, l := range allLabelNames {
 		if labels[l] == "" {
 			labels[l] = ""
@@ -223,8 +224,9 @@ func (e *Exporter) statTube(c *beanstalk.Conn, tubeName string, f func(prometheu
 		}
 
 		gaugeVec := prometheus.NewGaugeVec(prometheus.GaugeOpts{
-			Name: name,
-			Help: help,
+			Namespace: namespace,
+			Name:      name,
+			Help:      help,
 		}, allLabelNames)
 
 		gauge := gaugeVec.With(labels)

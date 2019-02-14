@@ -24,6 +24,10 @@ var (
 	registry *prometheus.Registry
 )
 
+const (
+	namespace = "beanstalkd"
+)
+
 func watchConfig(fileName string, mapper *tubeMapper) {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
