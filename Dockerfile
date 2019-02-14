@@ -1,13 +1,28 @@
-FROM golang:alpine
+# Stage 0
+# Build binary file
+FROM golang:1.11.5-alpine as builder
 
-RUN apk add --no-cache --virtual git && \
-    go-wrapper download github.com/messagebird/beanstalkd_exporter && \
-    cp -v $GOPATH/bin/beanstalkd_exporter /usr/local/bin/beanstalkd_exporter && \
-    rm -rvf $GOPATH && \
-    apk del git
+ARG PROJECT_ORG=github.com/tef-novum
+ARG PROJECT_NAME=beanstalkd_exporter
+ARG PROJECT_SLUG=${PROJECT_ORG}/${PROJECT_NAME}
+ARG PROJECT_TAG=metric_namespace
 
-COPY examples/ /etc/beanstalkd_exporter/
+RUN apk add --update git make curl
+RUN curl https://glide.sh/get | sh
 
-EXPOSE 8080
-ENTRYPOINT ["beanstalkd_exporter"]
-CMD ["-beanstalkd.address", "beanstalkd:11300", "-mapping-config", "/etc/beanstalkd_exporter/mapping.conf"]
+RUN mkdir -p src/${PROJECT_SLUG}
+
+WORKDIR /go/src/${PROJECT_ORG}
+RUN git clone https://${PROJECT_SLUG}.git
+WORKDIR  /go/src/${PROJECT_SLUG}
+RUN git checkout ${PROJECT_TAG}
+RUN glide init --non-interactive && glide install
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o build/${PROJECT_NAME} -v
+
+# Stage 1
+# Build actual docker image
+FROM alpine:3.8
+ARG PROJECT_SLUG=github.com/tef-novum/beanstalkd_exporter
+LABEL maintainer="sre@tuenti.com"
+COPY --from=builder /go/src/$PROJECT_SLUG/build/beanstalkd_exporter /beanstalkd_exporter
+ENTRYPOINT ["/beanstalkd_exporter"]
